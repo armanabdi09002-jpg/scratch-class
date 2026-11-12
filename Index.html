@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>کلاس آموزش اسکرچ با فرداد و آرمان</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff7ec;--card:#fff;--tx:#2b2540;--mu:#6d6785;--pr:#ff8a1f;--pr2:#7b4dff;--bd:#eadfcf;--ok:#1d9a5b;--er:#d6334a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17141f;--card:#221e2e;--tx:#f1ecff;--mu:#a9a2c4;--bd:#383250}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.8}
+header{background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;text-align:center;padding:28px 16px}
+h1{margin:0;font-size:clamp(22px,5vw,38px);font-weight:900}
+header p{margin:4px 0 0;opacity:.9}
+nav{display:flex;gap:8px;justify-content:center;padding:12px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav button{font:inherit}
+main{max-width:900px;margin:auto;padding:8px 14px 40px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin:12px 0}
+h2{margin:0 0 8px;font-size:20px}h3{margin:10px 0 4px;font-size:16px}
+button,.btn{font:inherit;background:var(--pr);color:#fff;border:0;border-radius:10px;padding:8px 16px;cursor:pointer}
+nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+nav button.on{background:var(--pr2);color:#fff;border-color:var(--pr2)}
+button.sec{background:var(--pr2)}button.del{background:var(--er);padding:2px 10px}
+input,select,textarea{font:inherit;width:100%;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);margin:4px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:2px 14px}
+.item{border-bottom:1px dashed var(--bd);padding:6px 0}.item small{color:var(--mu)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.gal img{width:100%;border-radius:10px;display:block}
+.hol{background:#ffe3e6;color:#a01c30;border-radius:10px;padding:4px 12px;margin:4px 0}
+@media(prefers-color-scheme:dark){.hol{background:#4a1d28;color:#ffc3cc}}
+.msg{color:var(--er)}.ok{color:var(--ok)}
+.hide{display:none}
+.net{background:#ffe3e6;color:#a01c30;text-align:center;padding:6px;border-radius:10px;margin:8px 0}
+</style>
+</head>
+<body>
+<header><h1>🐱 کلاس آموزش اسکرچ با فرداد و آرمان</h1><p>Scratch · mBlock · App Inventor</p></header>
+<nav><button id="n-home" onclick="go('home')">صفحه اصلی</button><button id="n-reg" onclick="go('reg')">ثبت‌نام</button><button id="n-login" onclick="go('login')">ورود</button></nav>
+<main id="app"></main>
+<script>
+const SK='scratch_class_sess';
+const DAYS=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
+let S={news:[],photos:[],classes:[],sched:[],hol:[]},sess=null,view='home',msg='',net=false,last='';
+try{sess=JSON.parse(localStorage.getItem(SK))}catch(e){}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=id=>document.getElementById(id).value;
+const isAdmin=()=>!!sess&&sess.role==='admin';
+const go=x=>{view=x;msg='';draw()};
+const saveSess=r=>{sess={token:r.token,role:r.role,name:r.name};try{localStorage.setItem(SK,JSON.stringify(sess))}catch(e){}};
+function logout(){sess=null;try{localStorage.removeItem(SK)}catch(e){}delete S.me;delete S.students;last='';load().then(draw)}
+
+async function api(path,body){
+ const r=await fetch(path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(sess?{Authorization:'Bearer '+sess.token}:{})},body:body?JSON.stringify(body):undefined});
+ let j={};try{j=await r.json()}catch(e){}
+ if(r.status===401&&sess&&path!=='/api/login'&&path!=='/api/register'){sess=null;try{localStorage.removeItem(SK)}catch(e){}throw new Error('نشست شما منقضی شد؛ دوباره وارد شوید.')}
+ if(!r.ok)throw new Error(j.error||'خطا در ارتباط با سرور');
+ return j}
+async function load(){try{const n=await api('/api/state');net=false;const j=JSON.stringify(n);const ch=j!==last;last=j;S=n;return ch}catch(e){net=true;return false}}
+async function run(f){msg='';try{await f()}catch(e){msg=e.message}await load();draw()}
+
+function img(file,cb){if(!file)return cb(null);const fr=new FileReader();fr.onload=()=>{const i=new Image();i.onload=()=>{const k=Math.min(1,500/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.7))};i.onerror=()=>{msg='این فایل عکس معتبر نیست.';draw()};i.src=fr.result};fr.readAsDataURL(file)}
+function gal(a,del){return a.length?'<div class="gal">'+a.map(p=>`<figure style="margin:0"><img src="${esc(p.src)}" alt=""><small>${esc(p.cap)}</small>${del?`<br><button class="del" onclick="delPhoto('${p.id}')">حذف</button>`:''}</figure>`).join('')+'</div>':'<small>هنوز عکسی نیست.</small>'}
+function newsList(a,adm){return a.length?a.slice().reverse().map(n=>`<div class="item"><b>${esc(n.t)}</b> <small>${esc(n.d)}</small><br>${esc(n.b)}${adm?` <button class="del" onclick="delNews('${n.id}')">حذف</button>`:''}</div>`).join(''):'<small>خبری نیست.</small>'}
+function pub(adm){
+ const pubPhotos=S.photos.map(p=>({id:p.id,cap:p.cap,src:'/img/'+p.id}));
+ return `<div class="card"><h2>📰 خبرها</h2>${newsList(S.news,adm)}</div>
+ <div class="card"><h2>🖼️ عکس‌ها</h2>${gal(pubPhotos,adm)}</div>
+ <div class="card"><h2>📚 کلاس‌ها</h2><div class="chips">${S.classes.map((c,i)=>`<span class="chip">${esc(c)}${adm?` <button class="del" data-c="${esc(c)}" onclick="delCls(this.dataset.c)">×</button>`:''}</span>`).join('')}</div></div>
+ <div class="card"><h2>🕒 ساعت کلاس‌ها</h2>${S.sched.length?S.sched.map(s=>`<div class="item">${esc(s.c)} — ${esc(s.day)} ساعت ${esc(s.t)}${adm?` <button class="del" onclick="delSch('${s.id}')">حذف</button>`:''}</div>`).join(''):'<small>برنامه‌ای ثبت نشده.</small>'}
+ <h3>🚫 تعطیلی‌ها</h3>${S.hol.length?S.hol.map(h=>`<div class="hol">${esc(h.d)} — ${esc(h.n)}${adm?` <button class="del" onclick="delHol('${h.id}')">حذف</button>`:''}</div>`).join(''):'<small>تعطیلی‌ای اعلام نشده.</small>'}</div>`}
+function stuPanel(){const s=S.me;if(!s)return '<div class="card"><small>در حال بارگذاری…</small></div>';return `<div class="card"><h2>سلام ${esc(s.name)} 👋</h2><p>ترم: <b>${esc(s.term||'هنوز مشخص نشده')}</b></p><button class="sec" onclick="logout()">خروج</button></div>
+ <div class="card"><h2>🔒 خبرهای خصوصی شما</h2>${newsList(s.news,false)}</div>
+ <div class="card"><h2>🖼️ عکس‌های شما</h2>${gal(s.photos,false)}</div>
+ <div class="card"><h2>📝 کارنامه</h2>${s.report?esc(s.report).replace(/\n/g,'<br>'):'<small>هنوز کارنامه‌ای ثبت نشده.</small>'}</div>
+ <h2 style="margin-top:20px">اطلاعات عمومی</h2>${pub(false)}`}
+function regView(){
+ if(sess&&sess.role==='student')return stuPanel();
+ return `<div class="card"><h2>ثبت‌نام</h2><input id="rn" placeholder="نام و نام‌خانوادگی"><input id="rp" type="password" placeholder="یک رمز برای خودتان"><button onclick="reg()">ثبت‌نام</button></div>
+ <div class="card"><h2>قبلاً ثبت‌نام کرده‌ام</h2><input id="ln" placeholder="نام"><input id="lp" type="password" placeholder="رمز"><button class="sec" onclick="stuLogin()">ورود دانش‌آموز</button></div>
+ <p class="msg">${esc(msg)}</p>${pub(false)}`}
+function loginView(){
+ if(!isAdmin())return `<div class="card"><h2>ورود مربی</h2><input id="an" placeholder="نام (فرداد، آرمان ...)"><input id="ap" type="password" placeholder="رمز"><button onclick="adm()">ورود</button><p class="msg">${esc(msg)}</p></div>`;
+ const st=S.students||[];
+ return `<div class="card"><h2>پنل مربی</h2><button class="sec" onclick="logout()">خروج</button> <span class="msg">${esc(msg)}</span></div>
+ <div class="card"><h3>➕ خبر جدید (عمومی)</h3><input id="nt" placeholder="عنوان"><textarea id="nb" placeholder="متن خبر"></textarea><button onclick="addNews()">افزودن خبر</button></div>
+ <div class="card"><h3>➕ عکس جدید (عمومی)</h3><input id="pf" type="file" accept="image/*"><input id="pc" placeholder="توضیح عکس"><button onclick="addPhoto()">افزودن عکس</button></div>
+ <div class="card"><h3>➕ کلاس جدید</h3><div class="row"><input id="cn" placeholder="نام کلاس"><button onclick="addCls()">افزودن</button></div></div>
+ <div class="card"><h3>🕒 ساعت کلاس</h3><div class="row"><select id="sc">${S.classes.map(c=>`<option>${esc(c)}</option>`).join('')}</select><select id="sd">${DAYS.map(d=>`<option>${d}</option>`).join('')}</select><input id="st" type="time"></div><button onclick="addSch()">ثبت ساعت</button>
+ <h3>🚫 تعطیلی</h3><div class="row"><input id="hd" type="date"><input id="hn" placeholder="دلیل / توضیح"></div><button onclick="addHol()">ثبت تعطیلی</button></div>
+ <div class="card"><h3>👥 ثبت‌نام‌شدگان (${st.length})</h3>${st.map(s=>`<div class="item"><b>${esc(s.name)}</b> <button class="del" onclick="delStu('${s.id}')">حذف</button>
+ <input id="tm${s.id}" placeholder="ترم" value="${esc(s.term||'')}"><textarea id="rp${s.id}" placeholder="کارنامه">${esc(s.report||'')}</textarea><button class="sec" onclick="saveStu('${s.id}')">ذخیره ترم و کارنامه</button>
+ <input id="sn${s.id}" placeholder="خبر خصوصی برای ${esc(s.name)}"><button onclick="stuNews('${s.id}')">افزودن خبر خصوصی</button>
+ <input id="sf${s.id}" type="file" accept="image/*"><button onclick="stuPhoto('${s.id}')">افزودن عکس خصوصی</button>
+ ${s.newsCount||s.photoCount?'<br><small>خبرها: '+s.newsCount+' | عکس‌ها: '+s.photoCount+'</small>':''}</div>`).join('')||'<small>کسی ثبت‌نام نکرده.</small>'}</div>
+ ${pub(true)}`}
+function homeView(){return pub(false)}
+function draw(){['home','reg','login'].forEach(x=>document.getElementById('n-'+x).className=view==x?'on':'');
+ const b=view=='home'?homeView():view=='reg'?regView():loginView();
+ document.getElementById('app').innerHTML=(net?'<div class="net">ارتباط با سرور برقرار نیست؛ دوباره تلاش می‌کنیم…</div>':'')+b}
+
+// ---- ورود و ثبت‌نام ----
+const doLogin=async(path,body)=>{msg='';try{saveSess(await api(path,body))}catch(e){msg=e.message}await load();draw()};
+const adm=()=>doLogin('/api/login',{role:'admin',name:v('an'),pass:v('ap')});
+const reg=()=>doLogin('/api/register',{name:v('rn'),pass:v('rp')});
+const stuLogin=()=>doLogin('/api/login',{role:'student',name:v('ln'),pass:v('lp')});
+
+// ---- کارهای مربی ----
+const addNews=()=>{if(!v('nt').trim())return;run(()=>api('/api/news',{t:v('nt'),b:v('nb')}))};
+const addPhoto=()=>img(document.getElementById('pf').files[0],d=>{if(d)run(()=>api('/api/photo',{src:d,cap:v('pc')}))});
+const addCls=()=>{const c=v('cn').trim();if(c)run(()=>api('/api/class',{name:c}))};
+const addSch=()=>{if(!v('st'))return;run(()=>api('/api/sched',{c:v('sc'),day:v('sd'),t:v('st')}))};
+const addHol=()=>{if(!v('hd'))return;run(()=>api('/api/hol',{d:v('hd'),n:v('hn')}))};
+const saveStu=id=>run(async()=>{await api('/api/student/save',{id,term:v('tm'+id),report:v('rp'+id)});msg='ذخیره شد ✓'});
+const stuNews=id=>{const t=v('sn'+id).trim();if(t)run(()=>api('/api/student/news',{id,t}))};
+const stuPhoto=id=>img(document.getElementById('sf'+id).files[0],d=>{if(d)run(()=>api('/api/student/photo',{id,src:d}))});
+const delNews=id=>run(()=>api('/api/news/delete',{id}));
+const delPhoto=id=>run(()=>api('/api/photo/delete',{id}));
+const delCls=name=>run(()=>api('/api/class/delete',{name}));
+const delSch=id=>run(()=>api('/api/sched/delete',{id}));
+const delHol=id=>run(()=>api('/api/hol/delete',{id}));
+const delStu=id=>{if(confirm('این دانش‌آموز حذف شود؟'))run(()=>api('/api/student/delete',{id}))};
+
+// ---- شروع و به‌روزرسانی خودکار (بدون پاک کردن چیزی که در حال تایپ است) ----
+draw();
+load().then(draw);
+setInterval(async()=>{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;if(await load())draw()},8000);
+</script>
+</body>
+</html>
